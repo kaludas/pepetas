@@ -1,11 +1,19 @@
-let pepetasBalance = 0.00;
+let pepetasBalance = parseFloat(localStorage.getItem('pepetasBalance')) || 0.00;
 let tapValue = 0.01;
 let farmingProgress = 0;
-let userLevel = 5;
+let userLevel = parseInt(localStorage.getItem('userLevel')) || 1;
+let canClaim = true;
+let claimTimer = parseInt(localStorage.getItem('claimTimer')) || 0;
+let lastCheckIn = parseInt(localStorage.getItem('lastCheckIn')) || 0;
+
+function updateBalance(amount) {
+    pepetasBalance = parseFloat(pepetasBalance) + amount;
+    localStorage.setItem('pepetasBalance', pepetasBalance);
+    document.getElementById('balance-amount').textContent = pepetasBalance.toFixed(2) + ' PEPETAS';
+}
 
 document.getElementById('tap-to-earn').addEventListener('click', function() {
-    pepetasBalance += tapValue;
-    document.getElementById('balance-amount').textContent = pepetasBalance.toFixed(2) + ' PEPETAS';
+    updateBalance(tapValue);
     showTapAnimation();
     updateMissionProgress('earn', tapValue);
 });
@@ -23,71 +31,100 @@ function showTapAnimation() {
 }
 
 function updateFarmingTimer() {
-    let timer = document.getElementById('farming-timer');
-    let [hours, minutes, seconds] = timer.textContent.split(':').map(Number);
-    
-    if (seconds > 0) {
-        seconds--;
-    } else if (minutes > 0) {
-        minutes--;
-        seconds = 59;
-    } else if (hours > 0) {
-        hours--;
-        minutes = 59;
-        seconds = 59;
-    }
-
-    timer.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-    if (hours === 0 && minutes === 0 && seconds === 0) {
-        document.getElementById('claim-btn').disabled = false;
+    if (!canClaim) {
+        claimTimer--;
+        if (claimTimer <= 0) {
+            canClaim = true;
+            document.getElementById('claim-btn').disabled = false;
+            document.getElementById('claim-btn').textContent = 'Claim 50 PEPETAS';
+        } else {
+            let hours = Math.floor(claimTimer / 3600);
+            let minutes = Math.floor((claimTimer % 3600) / 60);
+            let seconds = claimTimer % 60;
+            document.getElementById('claim-btn').textContent = `${hours}h ${minutes}m ${seconds}s`;
+        }
+        localStorage.setItem('claimTimer', claimTimer);
     }
 }
 
 setInterval(updateFarmingTimer, 1000);
 
 document.getElementById('claim-btn').addEventListener('click', function() {
-    if (!this.disabled) {
-        pepetasBalance += 50;
-        document.getElementById('balance-amount').textContent = pepetasBalance.toFixed(2) + ' PEPETAS';
+    if (canClaim) {
+        updateBalance(50);
+        canClaim = false;
+        claimTimer = 21600; // 6 heures
         this.disabled = true;
-        document.getElementById('farming-timer').textContent = '06:00:00';
         updateMissionProgress('earn', 50);
     }
 });
-fetch('api.php')
-  .then(response => response.json())
-  .then(data => {
-    document.getElementById('balance-amount').textContent = data.balance + ' PEPETAS';
-  });
+
 document.getElementById('checkin-btn').addEventListener('click', function() {
-    alert('Daily check-in successful! Reward added.');
-    updateMissionProgress('checkin', 1);
+    const now = Date.now();
+    if (now - lastCheckIn > 86400000) { // 24 heures en millisecondes
+        updateBalance(10);
+        lastCheckIn = now;
+        localStorage.setItem('lastCheckIn', lastCheckIn);
+        alert('Daily check-in successful! You received 10 PEPETAS.');
+        updateMissionProgress('checkin', 1);
+    } else {
+        alert('You can only check in once per day.');
+    }
 });
 
 function updateMissionProgress(missionType, value) {
-    // Logique pour mettre à jour la progression des missions
-    // Cette fonction devrait être étendue pour gérer différents types de missions
+    // Implémentez ici la logique pour mettre à jour les missions
+    console.log(`Mission progress: ${missionType}, value: ${value}`);
 }
 
 function levelUp() {
     userLevel++;
+    localStorage.setItem('userLevel', userLevel);
     document.getElementById('user-level').textContent = userLevel;
     alert('Félicitations ! Vous êtes passé au niveau ' + userLevel + ' !');
 }
-let pepetasBalance = localStorage.getItem('pepetasBalance') || 0.00;
 
-function updateBalance(amount) {
-    pepetasBalance = parseFloat(pepetasBalance) + amount;
-    localStorage.setItem('pepetasBalance', pepetasBalance);
-    document.getElementById('balance-amount').textContent = pepetasBalance.toFixed(2) + ' PEPETAS';
+// Initialisation
+document.getElementById('balance-amount').textContent = pepetasBalance.toFixed(2) + ' PEPETAS';
+document.getElementById('user-level').textContent = userLevel;
+
+// Ajoutez ici le code pour les tâches et l'invitation d'amis
+const tasks = JSON.parse(localStorage.getItem('tasks')) || [
+    { name: 'Collect 100 PEPETAS', reward: 50, progress: 0, goal: 100 },
+    { name: 'Invite 2 friends', reward: 100, progress: 0, goal: 2 }
+];
+
+function updateTasks() {
+    const taskList = document.getElementById('task-list');
+    taskList.innerHTML = '';
+    tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.textContent = `${task.name} - Progress: ${task.progress}/${task.goal}`;
+        const completeBtn = document.createElement('button');
+        completeBtn.textContent = 'Complete';
+        completeBtn.onclick = () => completeTask(index);
+        li.appendChild(completeBtn);
+        taskList.appendChild(li);
+    });
+    localStorage.setItem('tasks', JSON.stringify(tasks));
 }
 
-document.getElementById('tap-to-earn').addEventListener('click', function() {
-    updateBalance(0.01);
-    showTapAnimation();
+function completeTask(index) {
+    if (tasks[index].progress < tasks[index].goal) {
+        tasks[index].progress++;
+        if (tasks[index].progress === tasks[index].goal) {
+            updateBalance(tasks[index].reward);
+            alert(`Task completed! You earned ${tasks[index].reward} PEPETAS.`);
+        }
+        updateTasks();
+    }
+}
+
+document.getElementById('invite-btn').addEventListener('click', function() {
+    alert('Invitation link: https://t.me/your_bot_link');
+    // Simuler l'invitation d'un ami
+    tasks[1].progress = Math.min(tasks[1].progress + 1, tasks[1].goal);
+    updateTasks();
 });
 
-// Chargement initial
-document.getElementById('balance-amount').textContent = pepetasBalance + ' PEPETAS';
-// Ajoutez ici d'autres fonctions pour gérer les missions, les mini-jeux, etc.
+updateTasks();
