@@ -99,3 +99,27 @@ def echo_all(message):
 
 if __name__ == "__main__":
     bot.polling()
+
+def show_help(message):
+    help_text = """
+    Commandes disponibles :
+    /start - Démarrer le bot
+    /help - Afficher cette aide
+    
+    Fonctionnalités :
+    🏠 Home - Page d'accueil
+    🎮 Games - Jeux disponibles
+    👥 Friends - Gérer vos amis
+    📋 Tasks - Voir et compléter des tâches
+    💰 Tap to Earn - Gagner des PEPETAS
+    🎁 Claim - Réclamer votre récompense
+    📅 Daily Check-in - Check-in quotidien
+    📊 Balance - Voir votre solde
+    🐸 Jouer à Frogger - Lancer le jeu Frogger
+    💼 Wallet - Gérer votre portefeuille
+    """
+    bot.reply_to(message, help_text)
+
+@bot.message_handler(commands=['help'])
+def help_command(message):
+    show_help(message)
