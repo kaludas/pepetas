@@ -28,7 +28,13 @@ function updateFarmingTimer() {
         document.getElementById('claim-btn').disabled = false;
     }
 }
-
+document.getElementById('checkin-btn').addEventListener('click', function() {
+    // Simuler une réponse du bot
+    setTimeout(() => {
+        alert("Le bot PEPETAS dit : Félicitations ! Vous avez reçu 50 PEPETAS pour votre check-in quotidien.");
+        updateBalance(50);
+    }, 1000);
+});
 setInterval(updateFarmingTimer, 1000);
 
 document.getElementById('claim-btn').addEventListener('click', function() {
