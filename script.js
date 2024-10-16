@@ -1,4 +1,4 @@
-let pepetasBalance = 21749.85;
+let pepetasBalance = 0.00;
 let tapValue = 0.01;
 let farmingProgress = 0;
 
