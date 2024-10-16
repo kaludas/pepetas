@@ -100,6 +100,16 @@ def echo_all(message):
 if __name__ == "__main__":
     bot.polling()
 
+def create_main_menu():
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+    # ... autres boutons ...
+    markup.row(KeyboardButton("❓ Help"))
+    return markup
+
+@bot.message_handler(func=lambda message: message.text == "❓ Help")
+def help_button(message):
+    show_help(message)
+
 def show_help(message):
     help_text = """
     Commandes disponibles :
